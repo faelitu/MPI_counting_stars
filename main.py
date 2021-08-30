@@ -43,6 +43,7 @@ if rank == 0:
     tile_height = height//num
     tile_width = width//num
     print('Cropping image...')
+    tile_id = 0
     for tile_i in range(0, num):
         for tile_j in range(0, num):
             tile = []
@@ -58,21 +59,21 @@ if rank == 0:
             print('Tile cropped')
             
             # Send tile size to slave process
-            comm.send(len(tile), dest=1)
+            comm.send(len(tile), dest=1, tag=0)
+            comm.send(len(tile[0]), dest=1, tag=1)
             # Send tile to slave process
-            comm.Send(tile, dest=1, tag=1)
+            data = [tile_id, tile]
+            comm.send(data, dest=1, tag=2)
 
             im_bin[i] = 0 # to free memory
+            tile_id += 1
             break
         break
     del im_bin # to free memory
 elif rank == 1:
-    numData = comm.recv(source=0)
-    print('Number of data to receive:', numData)
-
-    data = np.empty(numData, dtype='d')  # allocate space to receive the array
-    comm.Recv(data, source=0, tag=1)
-
-    print('Process', rank, 'received tile from process 0')
+    numDataY = comm.recv(source=0, tag=0)
+    numDataX = comm.recv(source=0, tag=1)
+    data = comm.recv(source=0, tag=2)
+    print('\nProcess', rank, 'received Tile', data[0], ' with dimension', numDataY, 'x', numDataX, 'from master process\n')
 
 MPI.Finalize()
