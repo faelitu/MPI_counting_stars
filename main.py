@@ -4,7 +4,6 @@ from mpi4py import MPI
 
 from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
-import image_slicer
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -45,8 +44,58 @@ comm.Barrier()
 # fh.Close()
 
 if rank == 0:
-    tiles = image_slicer.slice('images/2.png', 14, save=False)
-    data = [tiles[i] for i in range(world_size)]
+    print('Starting to manipulate image...')
+    # Opens a image in RGB mode
+    im = Image.open('images/2.png')
+    print('Image opened')
+
+    print('Binarizing image...')
+    # Convert to grayscale
+    im_gray = np.array(im.convert('L'))
+    del im
+
+    # Binarizing image:
+    thresh = 128
+    im_bool = (im_gray > thresh)
+    del im_gray
+
+    maxval = 255
+    im_bin = im_bool * maxval
+    del im_bool
+    # Image.fromarray(np.uint8(im_bin)).save('test.png')
+    print('Image binarized')
+    
+    # Size of the image in pixels (size of original image)
+    height = len(im_bin)
+    width = len(im_bin[0])
+    
+    # Setting the points for cropped image
+    # left = 5
+    # top = height / 4
+    # right = 164
+    # bottom = 3 * height / 4
+    
+    # Cropped image of above dimension
+    # (It will not change original image)
+    # im1 = im.crop((left, top, right, bottom))
+
+    # Divide image in 100 tiles
+    num = 10
+    tile_height = height//num
+    tile_width = width//num
+    tiles = []
+    print('Cropping image...')
+    for tile in range(0, num * num):
+        t = []
+        for i in range(tile * tile_height, tile * tile_height + tile_height):
+            row = []
+            for j in range(tile * tile_width, tile * tile_width + tile_width):
+                row.append(im_bin[i][j])
+            t.append(row)
+        tiles.append(t)
+    print('Image cropped')
+
+    data = [tiles[i] for i in range(num * num)]
 else:
     data = None
 
