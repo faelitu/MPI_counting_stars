@@ -21,3 +21,5 @@ else:
     data[0] = rank
     comm.Ssend([data, MPI.INT], dest=0, tag=77)
     print('Process', rank, 'sended message', data, 'to process 0')
+
+MPI.Finalize()
