@@ -3,6 +3,7 @@
 ## Install dependencies
 
 `sudo apt-get install lam-runtime`
+
 `sudo apt install lam4-dev`
 
 ## Start the LAM/MPI runtime environment
