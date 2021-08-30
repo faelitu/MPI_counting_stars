@@ -1,7 +1,6 @@
 import time
 import numpy as np
 from mpi4py import MPI
-from mpi4py.util import dtlib
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
