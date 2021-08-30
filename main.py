@@ -19,6 +19,6 @@ else:
     data = np.arange(1, dtype='i')
     data[0] = rank
     comm.Ssend([data, MPI.INT], dest=0, tag=77)
-    print('Process', rank, 'sended message', data, 'to process 0')
+    print('Process', rank, 'sent message', data, 'to process 0')
 
 MPI.Finalize()
