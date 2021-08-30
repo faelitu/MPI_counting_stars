@@ -8,6 +8,8 @@
 
 `python -m pip install mpi4py`
 
+`python -m pip install image_slicer`
+
 ## Start the LAM/MPI runtime environment
 
 `lamboot`
