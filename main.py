@@ -13,38 +13,8 @@ print('Hello world from processor', name, ', my rank is', rank, 'out of', world_
 
 comm.Barrier()
 
-# if rank == 0:
-#     print('All processes are waiting')
-#     for i in range(1, world_size):
-#         data = np.empty(1, dtype='i')
-#         comm.Send([data, MPI.INT], source=i, tag=77)
-#     print('All processes are sincronized')
-# else:
-#     data = np.arange(1, dtype='i')
-#     data[0] = rank
-#     comm.Ssend([data, MPI.INT], dest=0, tag=77)
-#     print('Process', rank, 'sent message', data, 'to process 0')
-
-# amode = MPI.MODE_WRONLY|MPI.MODE_CREATE
-# fh = MPI.File.Open(comm, "./images/1.png", amode)
-
-# item_count = 10
-
-# buffer = np.empty(item_count, dtype='i')
-# buffer[:] = rank
-
-# filetype = MPI.INT.Create_vector(item_count, 1, world_size)
-# filetype.Commit()
-
-# displacement = MPI.INT.Get_size()*rank
-# fh.Set_view(displacement, filetype=filetype)
-
-# fh.Write_all(buffer)
-# filetype.Free()
-# fh.Close()
-
 if rank == 0:
-    print('Starting to manipulate image...')
+    print('\nStarting to manipulate image...')
     # Opens a image in RGB mode
     im = Image.open('images/2.png')
     print('Image opened')
@@ -62,45 +32,47 @@ if rank == 0:
     maxval = 255
     im_bin = im_bool * maxval
     del im_bool
-    # Image.fromarray(np.uint8(im_bin)).save('test.png')
     print('Image binarized')
     
     # Size of the image in pixels (size of original image)
     height = len(im_bin)
     width = len(im_bin[0])
-    
-    # Setting the points for cropped image
-    # left = 5
-    # top = height / 4
-    # right = 164
-    # bottom = 3 * height / 4
-    
-    # Cropped image of above dimension
-    # (It will not change original image)
-    # im1 = im.crop((left, top, right, bottom))
 
-    # Divide image in 100 tiles
+    # Divide image in 100 tiles and send tiles as soon as they are built
     num = 10
     tile_height = height//num
     tile_width = width//num
-    tiles = []
     print('Cropping image...')
-    for tile in range(0, num * num):
-        t = []
-        for i in range(tile * tile_height, tile * tile_height + tile_height):
-            row = []
-            for j in range(tile * tile_width, tile * tile_width + tile_width):
-                row.append(im_bin[i][j])
-            t.append(row)
-        tiles.append(t)
-    print('Image cropped')
+    for tile_i in range(0, num):
+        for tile_j in range(0, num):
+            tile = []
+            for i in range(tile_i * tile_height, tile_i * tile_height + tile_height):
+                row = []
+                for j in range(tile_j * tile_width, tile_j * tile_width + tile_width):
+                    row.append(im_bin[i][j])
+                assert len(row) == tile_width
+                tile.append(row)
+                im_bin[i][j] = 0 # to free memory
+            assert len(tile) == tile_height
 
-    data = [tiles[i] for i in range(num * num)]
-else:
-    data = None
+            print('Tile cropped')
+            
+            # Send tile size to slave process
+            comm.send(len(tile), dest=1)
+            # Send tile to slave process
+            comm.Send(tile, dest=1, tag=1)
 
-data = comm.scatter(data, root=0)
-# assert data == rank
-print('Process', rank, 'received message', data, 'from process 0')
+            im_bin[i] = 0 # to free memory
+            break
+        break
+    del im_bin # to free memory
+elif rank == 1:
+    numData = comm.recv(source=0)
+    print('Number of data to receive:', numData)
+
+    data = np.empty(numData, dtype='d')  # allocate space to receive the array
+    comm.Recv(data, source=0, tag=1)
+
+    print('Process', rank, 'received tile from process 0')
 
 MPI.Finalize()
