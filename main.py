@@ -62,7 +62,6 @@ if rank == 0:
                     row.append(im_bin[i][j])
                 assert len(row) == tile_width
                 tile.append(row)
-                im_bin[i][j] = 0 # to free memory
             assert len(tile) == tile_height
 
             print('\nTile', tile_id, 'cropped.')
@@ -87,7 +86,6 @@ if rank == 0:
             comm.send(data, dest=next_slave, tag=2)
             print('Master sent Tile', tile_id, 'to Slave', next_slave)
 
-            im_bin[i] = 0 # to free memory
             tile_id += 1
         break
     del im_bin # to free memory
