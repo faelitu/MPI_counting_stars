@@ -6,9 +6,7 @@
 
 `sudo apt install lam4-dev`
 
-`python -m pip install mpi4py`
-
-`python -m pip install image_slicer`
+`pip install -r requirements.txt`
 
 ## Start the LAM/MPI runtime environment
 
