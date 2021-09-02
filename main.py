@@ -43,19 +43,19 @@ if rank == 0:
         im_gray = np.array(im.convert('L'))
         del im
     
-        # Binarizing image:
-        thresh = 128
-        im_bool = (im_gray > thresh)
-        del im_gray
+        # # Binarizing image:
+        # thresh = 128
+        # im_bool = (im_gray > thresh)
+        # del im_gray
     
-        maxval = 255
-        im_bin = im_bool * maxval
-        del im_bool
-        print('Image', im_name, 'binarized.')
+        # maxval = 255
+        # im_bin = im_bool * maxval
+        # del im_bool
+        # print('Image', im_name, 'binarized.')
         
         # Size of the image in pixels (size of original image)
-        height = len(im_bin)
-        width = len(im_bin[0])
+        height = len(im_gray)
+        width = len(im_gray[0])
     
         # Divide image in 100 tiles and send tiles as soon as they are built
         num = 100
@@ -69,7 +69,7 @@ if rank == 0:
                 for i in range(tile_i * tile_height, tile_i * tile_height + tile_height):
                     row = []
                     for j in range(tile_j * tile_width, tile_j * tile_width + tile_width):
-                        row.append(im_bin[i][j])
+                        row.append(im_gray[i][j])
                     assert len(row) == tile_width
                     tile.append(row)
                 assert len(tile) == tile_height
@@ -100,7 +100,7 @@ if rank == 0:
     
                 tile_id += 1
             break
-        del im_bin # to free memory
+        # del im # to free memory
 
     # Send final message to all slaves
     for slave in range(1, world_size):
@@ -124,16 +124,28 @@ else:
     while not done:
         [id, tile] = comm.recv(source=0, tag=2)
         if id != 0:
+            tile = np.array(tile)
             print('\nSlave', rank, 'received Tile', id, 'with dimension', len(tile), 'x', len(tile[0]), 'from Master')
 
+        
+            # Binarizing image:
+            thresh = 128
+            tile_bool = (tile > thresh)
+            del tile
+        
+            maxval = 255
+            tile_bin = tile_bool * maxval
+            del tile_bool
+            print(f'Tile {id} binarized.')
+
             # Count all stars
-            for i in range(0, len(tile)):
-                for j in range(0, len(tile[0])):
-                    if tile[i][j] == 255:
-                        flood_star(i, j, tile)
+            for i in range(0, len(tile_bin)):
+                for j in range(0, len(tile_bin[0])):
+                    if tile_bin[i][j] == 255:
+                        flood_star(i, j, tile_bin)
                         number_of_stars += 1
 
-            del tile # to free memory
+            del tile_bin # to free memory
 
             # Send rank with tag 9 to warn master that this slave is now free and it result
             print('\n\tI am Slave', rank, 'and I am free! Now waiting...')
